@@ -37,10 +37,14 @@ jobs:
           if [ -n "$GRAPH_CLIENT_ID" ]; then echo "GRAPH_CLIENT_ID=$GRAPH_CLIENT_ID" >> .env; fi
           if [ -n "$GRAPH_WEBHOOK_CLIENT_STATE" ]; then echo "GRAPH_WEBHOOK_CLIENT_STATE=$GRAPH_WEBHOOK_CLIENT_STATE" >> .env; fi
           if [ -n "$GRAPH_MONITORED_USER_ID" ]; then echo "GRAPH_MONITORED_USER_ID=$GRAPH_MONITORED_USER_ID" >> .env; fi
+      - name: Verify Docker
+        run: |
+          docker --version
+          docker compose version
       - name: Build and start demo (docker-compose)
         run: |
-          docker-compose build api
-          docker-compose up -d api
+          docker compose build api
+          docker compose up -d api
       - name: Smoke test demo
         run: |
           # wait for health endpoint
@@ -53,5 +57,5 @@ jobs:
           curl -sSf http://localhost:8000/health
       - name: Tear down demo
         if: always()
-        run: docker-compose down
+        run: docker compose down
 

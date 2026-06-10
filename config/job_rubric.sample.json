@@ -1,0 +1,23 @@
+{
+  "job_id": "backend-ai-engineer-2026-06",
+  "version": "2026.06.10",
+  "title": "Backend AI Engineer",
+  "criteria": [
+    {
+      "name": "skills_match",
+      "weight": 0.4,
+      "required_signals": ["Python", "FastAPI", "Azure AI", "Microsoft Graph"]
+    },
+    {
+      "name": "experience_relevance",
+      "weight": 0.35,
+      "required_signals": ["production APIs", "cloud deployment", "auditability"]
+    },
+    {
+      "name": "role_fit",
+      "weight": 0.25,
+      "required_signals": ["cross-functional communication", "recruiting workflow empathy"]
+    }
+  ]
+}
+

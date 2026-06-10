@@ -1,0 +1,2 @@
+"""HireSignal backend package."""
+

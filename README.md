@@ -118,3 +118,19 @@ After confirmation, the next build step is Microsoft Fabric audit persistence:
 2. Add a local SQLite audit repository for development.
 3. Add a Fabric Lakehouse adapter boundary for production persistence.
 4. Ensure no raw CV text or PII is written to logs or tables.
+
+## Quick Demo
+ - Copy `.env.example` to `.env` and set required values.
+ - Run the API locally:
+
+```bash
+./scripts/demo.sh
+```
+
+## Fabric Lakehouse Adapter (scaffold)
+
+This repo includes a scaffolded Fabric Lakehouse adapter at `app/services/fabric_lakehouse.py` for teams that want to implement direct Lakehouse writes. The current `FabricAuditRepository` posts audit records to a configured Fabric endpoint; the Lakehouse adapter is intentionally a boundary placeholder for production implementations that need batching, authentication, and idempotency.
+
+## Teams shortlist posting
+
+HireSignal can post a plaintext shortlist to Microsoft Teams when `TEAMS_CHANNEL_ID` is set. Provide `TEAMS_CHANNEL_ID` in the form `teamId/channelId` and the service will post a simple ranked list after successful scoring and audit persistence. The endpoint to request a reasoning breakdown is available at `/teams/explain` and accepts `jobId` and `candidateHash` query parameters.

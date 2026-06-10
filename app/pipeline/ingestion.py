@@ -35,6 +35,7 @@ from app.services.audit_repository import (
 )
 from app.services.graph_client import GraphClient, GraphClientError, get_graph_client
 from app.services.manual_review import ManualReviewQueue, get_manual_review_queue
+from app.services.teams_client import TeamsClient, get_teams_client
 
 
 class IngestionResult(BaseModel):
@@ -58,6 +59,7 @@ class OutlookIngestionService:
         rubric_loader: RubricLoader | None = None,
         candidate_scoring_service: CandidateScoringService | None = None,
         audit_repository: AuditRepository | None = None,
+        teams_client: TeamsClient | None = None,
     ) -> None:
         self._settings = settings
         self._graph_client = graph_client
@@ -68,6 +70,12 @@ class OutlookIngestionService:
             candidate_scoring_service or get_candidate_scoring_service()
         )
         self._audit_repository = audit_repository or get_audit_repository(settings)
+        # Only construct a Teams client when a channel is configured to avoid
+        # forcing settings validation in test environments.
+        self._teams_client = (
+            teams_client
+            or (get_teams_client() if settings.teams_channel_id else None)
+        )
 
     async def process_notifications(
         self,
@@ -137,11 +145,33 @@ class OutlookIngestionService:
                 )
                 continue
             audited_count += 1
+            # collect recently audited records for posting
+            if audited_count == 1:
+                audited_records: list[dict] = []
+            audited_records.append(
+                CandidateScoreAuditRecord.from_candidate_score(
+                    score=score,
+                    pipeline_version=self._settings.pipeline_version,
+                    source_event_hash=hash_candidate_identifier(message_id),
+                ).model_dump()
+            )
 
         if scored_count == 0:
             return self._queue_manual_review(notification, "no_scored_candidates")
         if audited_count == 0:
             return self._queue_manual_review(notification, "no_audited_candidates")
+
+        # Post a simple shortlist to Teams if configured
+        if self._teams_client is not None:
+            try:
+                await self._teams_client.post_shortlist(
+                    job_id=rubric.job_id if hasattr(rubric, "job_id") else "unknown",
+                    rubric_version=rubric.version,
+                    candidates=audited_records,
+                )
+            except Exception:
+                # Non-fatal: teams posting failure should not block ingestion
+                pass
 
         return IngestionResult(
             message_id=message_id,

@@ -7,6 +7,7 @@ import httpx
 
 from app.core.config import Settings, get_settings
 from app.models.audit import CandidateScoreAuditRecord
+from app.services.fabric_lakehouse import FabricLakehouseAdapter
 
 
 class AuditPersistenceError(RuntimeError):
@@ -189,8 +190,28 @@ class FabricAuditRepository:
         )
 
 
+class FabricLakehouseRepository:
+    def __init__(self, settings: Settings, adapter: FabricLakehouseAdapter | None = None) -> None:
+        self._settings = settings
+        self._adapter = adapter or FabricLakehouseAdapter(settings)
+
+    async def save(self, record: CandidateScoreAuditRecord) -> None:
+        try:
+            await self._adapter.write_audit_record(record.model_dump(mode="json"))
+        except Exception as exc:
+            raise AuditPersistenceError("Unable to persist audit record to Fabric Lakehouse.") from exc
+
+    async def list_by_job(self, job_id: str) -> list[CandidateScoreAuditRecord]:
+        raise AuditPersistenceError(
+            "Fabric Lakehouse reads are intentionally handled by downstream reporting."
+        )
+
+
 def get_audit_repository(settings: Settings | None = None) -> AuditRepository:
     resolved_settings = settings or get_settings()
-    if resolved_settings.fabric_audit_mode.lower() == "fabric":
+    mode = resolved_settings.fabric_audit_mode.lower()
+    if mode == "fabric":
         return FabricAuditRepository(resolved_settings)
+    if mode == "lakehouse":
+        return FabricLakehouseRepository(resolved_settings)
     return SQLiteAuditRepository(resolved_settings.database_url)

@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from app.api.graph_auth import router as graph_auth_router
 from app.api.graph_notifications import router as graph_notifications_router
 from app.api.health import router as health_router
+from app.api.teams import router as teams_router
 
 app = FastAPI(
     title="HireSignal API",
@@ -13,3 +14,4 @@ app = FastAPI(
 app.include_router(health_router)
 app.include_router(graph_auth_router, prefix="/graph", tags=["graph"])
 app.include_router(graph_notifications_router, prefix="/graph", tags=["graph"])
+app.include_router(teams_router, prefix="/teams", tags=["teams"])

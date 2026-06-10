@@ -1,10 +1,9 @@
 """Audit retention policy management for compliance."""
 
-from datetime import UTC, datetime, timedelta
 import logging
+from datetime import UTC, datetime, timedelta
 
 from app.core.config import Settings, get_settings
-from app.services.audit_repository import SQLiteAuditRepository
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +33,6 @@ class AuditRetentionPolicy:
             )
             return 0
 
-        repo = SQLiteAuditRepository(db_url)
         cutoff_date = datetime.now(UTC) - timedelta(days=self.retention_days)
 
         try:

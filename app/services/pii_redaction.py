@@ -1,30 +1,41 @@
 """PII and sensitive data redaction utilities for logging and output."""
 
-import re
 import logging
-from typing import Any, Pattern
+import re
+from re import Pattern
 
 
 class SensitivePatterns:
     """Patterns for detecting and redacting sensitive information."""
 
     # Email addresses (non-exhaustive but catches common patterns)
-    EMAIL: Pattern = re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b')
+    EMAIL: Pattern = re.compile(
+        r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+    )
 
     # Phone numbers (US format and variations)
-    PHONE: Pattern = re.compile(r'\b(?:\+?1[-.\s]?)?\(?([0-9]{3})\)?[-.\s]?([0-9]{3})[-.\s]?([0-9]{4})\b')
+    PHONE: Pattern = re.compile(
+        r'\b(?:\+?1[-.\s]?)?\(?([0-9]{3})\)?[-.\s]?([0-9]{3})[-.\s]?([0-9]{4})\b'
+    )
 
     # Social Security Numbers
-    SSN: Pattern = re.compile(r'\b(?!000|666|9\d{2})\d{3}[-]?(?!00)\d{2}[-]?(?!0000)\d{4}\b')
+    SSN: Pattern = re.compile(
+        r'\b(?!000|666|9\d{2})\d{3}[-]?(?!00)\d{2}[-]?(?!0000)\d{4}\b'
+    )
 
     # Credit card numbers (simplified)
     CREDIT_CARD: Pattern = re.compile(r'\b(?:\d{4}[-\s]?){3}\d{4}\b')
 
     # API keys and tokens (common patterns)
-    API_KEY: Pattern = re.compile(r'(?:api[_-]?key|token|secret|password)\s*[=:]\s*([^\s,;]+)', re.IGNORECASE)
+    API_KEY: Pattern = re.compile(
+        r'(?:api[_-]?key|token|secret|password)\s*[=:]\s*([^\s,;]+)',
+        re.IGNORECASE,
+    )
 
     # Bearer tokens
-    BEARER_TOKEN: Pattern = re.compile(r'Bearer\s+([A-Za-z0-9\-._~+/]+=*)', re.IGNORECASE)
+    BEARER_TOKEN: Pattern = re.compile(
+        r'Bearer\s+([A-Za-z0-9\-._~+/]+=*)', re.IGNORECASE
+    )
 
 
 class RedactionFilter(logging.Filter):
@@ -51,7 +62,7 @@ class RedactionFilter(logging.Filter):
         elif isinstance(record.args, (tuple, list)):
             record.args = tuple(self._redact_string(str(arg)) for arg in record.args)
         elif record.args:
-            record.args = self._redact_string(str(record.args))
+            record.args = (self._redact_string(str(record.args)),)
 
         return True
 

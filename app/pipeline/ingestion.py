@@ -21,13 +21,13 @@ from app.pipeline.extraction import (
     DocumentExtractionError,
     get_cv_text_extractor,
 )
+from app.pipeline.privacy import hash_candidate_identifier
 from app.pipeline.rubric import RubricLoader, RubricLoadError, get_rubric_loader
 from app.pipeline.scoring import (
     CandidateScoringError,
     CandidateScoringService,
     get_candidate_scoring_service,
 )
-from app.pipeline.privacy import hash_candidate_identifier
 from app.services.audit_repository import (
     AuditPersistenceError,
     AuditRepository,

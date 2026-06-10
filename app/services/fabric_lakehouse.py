@@ -1,7 +1,7 @@
-from typing import Any
 import asyncio
 import json
 import logging
+from typing import Any
 
 import httpx
 
@@ -50,7 +50,6 @@ class FabricLakehouseAdapter:
 
         body = record if isinstance(record, dict) else json.loads(record)
 
-        last_exc: Exception | None = None
         for attempt in range(1, self._max_retries + 1):
             try:
                 async with httpx.AsyncClient(timeout=self._timeout) as client:
@@ -58,7 +57,6 @@ class FabricLakehouseAdapter:
                     resp.raise_for_status()
                     return
             except Exception as exc:  # pragma: no cover - network behavior
-                last_exc = exc
                 backoff = min(2 ** attempt, 10)
                 logger.warning("Fabric lakehouse write failed (attempt %s): %s", attempt, exc)
                 if attempt < self._max_retries:

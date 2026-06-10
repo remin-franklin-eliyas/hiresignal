@@ -1,12 +1,11 @@
-from typing import Iterable
 import asyncio
 import logging
+from collections.abc import Iterable
 
 import httpx
 
 from app.core.config import Settings, get_settings
 from app.services.graph_client import GraphClient, get_graph_client
-
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +19,12 @@ class TeamsClient:
         self._settings = settings
         self._graph_client = graph_client or get_graph_client()
 
-    async def post_shortlist(self, job_id: str, rubric_version: str, candidates: Iterable[dict]) -> None:
+    async def post_shortlist(
+        self,
+        job_id: str,
+        rubric_version: str,
+        candidates: Iterable[dict],
+    ) -> None:
         """Post an Adaptive Card shortlist to the configured Teams channel.
 
         Includes per-candidate summary and an action button to request
@@ -63,16 +67,28 @@ class TeamsClient:
                             "text": f"{idx}. {short_hash} — {overall}",
                             "weight": "Bolder",
                         },
-                        {"type": "TextBlock", "text": reasoning_text, "wrap": True, "spacing": "None"},
+                        {
+                            "type": "TextBlock",
+                            "text": reasoning_text,
+                            "wrap": True,
+                            "spacing": "None",
+                        },
                         {
                             "type": "ActionSet",
                             "actions": [
                                 {
                                     "type": "Action.OpenUrl",
                                     "title": "Explain",
-                                    "url": f"/teams/explain?jobId={job_id}&candidateHash={candidate_hash}",
+                                    "url": (
+                                        f"/teams/explain?jobId={job_id}"
+                                        f"&candidateHash={candidate_hash}"
+                                    ),
                                 },
-                                {"type": "Action.OpenUrl", "title": "Request Review", "url": "https://example.com/manual-review"},
+                                {
+                                    "type": "Action.OpenUrl",
+                                    "title": "Request Review",
+                                    "url": "https://example.com/manual-review",
+                                },
                             ],
                         },
                     ],
@@ -89,7 +105,12 @@ class TeamsClient:
                         "type": "AdaptiveCard",
                         "version": "1.4",
                         "body": [
-                            {"type": "TextBlock", "size": "Medium", "weight": "Bolder", "text": f"Shortlist for {job_id} (rubric {rubric_version})"},
+                            {
+                                "type": "TextBlock",
+                                "size": "Medium",
+                                "weight": "Bolder",
+                                "text": f"Shortlist for {job_id} (rubric {rubric_version})",
+                            },
                             *candidate_items,
                         ],
                     },
@@ -105,7 +126,6 @@ class TeamsClient:
         token = self._graph_client._graph_auth.acquire_app_token()
 
         # Retry with exponential backoff for transient failures
-        last_exc: Exception | None = None
         for attempt in range(1, 4):
             try:
                 async with httpx.AsyncClient(timeout=10) as client:
@@ -120,7 +140,6 @@ class TeamsClient:
                     response.raise_for_status()
                     return
             except Exception as exc:  # pragma: no cover - network behavior
-                last_exc = exc
                 backoff = min(2 ** attempt, 10)
                 logger.warning("Teams post failed (attempt %s): %s", attempt, exc)
                 if attempt < 3:

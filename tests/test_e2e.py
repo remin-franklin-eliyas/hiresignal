@@ -2,22 +2,19 @@ import base64
 from types import SimpleNamespace
 
 import fitz
-import pytest
-
 import httpx
+import pytest
 from fastapi.testclient import TestClient
 
-from app.main import app
 from app.core.config import Settings
-from app.services.teams_client import TeamsClient, TeamsPostingError
-from app.services.audit_repository import SQLiteAuditRepository
-from app.pipeline.ingestion import OutlookIngestionService
-from app.pipeline.scoring import CandidateScoringError
-from app.services.manual_review import ManualReviewQueue
+from app.main import app
 from app.models.attachments import GraphFileAttachment
-from app.models.notifications import ChangeNotification, ChangeNotificationCollection
+from app.models.notifications import ChangeNotification
 from app.models.scoring import CandidateScore, CriterionScore
-from pathlib import Path
+from app.pipeline.ingestion import OutlookIngestionService
+from app.services.audit_repository import SQLiteAuditRepository
+from app.services.manual_review import ManualReviewQueue
+from app.services.teams_client import TeamsClient
 
 
 def build_settings(**overrides) -> Settings:
@@ -131,7 +128,11 @@ async def test_audit_persistence_integration(tmp_path):
         'pipeline_version': 'p1',
         'overall_score': 90,
         'skills_match': {'criterion': 'skills_match', 'score': 90, 'reasoning': 'ok'},
-        'experience_relevance': {'criterion': 'experience_relevance', 'score': 80, 'reasoning': 'ok'},
+        'experience_relevance': {
+            'criterion': 'experience_relevance',
+            'score': 80,
+            'reasoning': 'ok',
+        },
         'role_fit': {'criterion': 'role_fit', 'score': 70, 'reasoning': 'ok'},
         'manual_review_required': False,
         'created_at': '2026-01-01T00:00:00',
@@ -169,8 +170,12 @@ async def test_ingestion_end_to_end_writes_to_sqlite(tmp_path):
                 candidate_hash='b'*64,
                 job_id=rubric.job_id,
                 rubric_version=rubric.version,
-                skills_match=CriterionScore(criterion='skills_match', score=90, reasoning='ok'),
-                experience_relevance=CriterionScore(criterion='experience_relevance', score=80, reasoning='ok'),
+                skills_match=CriterionScore(
+                    criterion='skills_match', score=90, reasoning='ok'
+                ),
+                experience_relevance=CriterionScore(
+                    criterion='experience_relevance', score=80, reasoning='ok'
+                ),
                 role_fit=CriterionScore(criterion='role_fit', score=70, reasoning='ok'),
                 overall_score=80,
             )

@@ -1,8 +1,8 @@
 from fastapi.testclient import TestClient
 
 from app.main import app
-from app.services.audit_repository import get_audit_repository
 from app.models.audit import CandidateScoreAuditRecord
+from app.services.audit_repository import get_audit_repository
 
 
 def test_teams_explain_not_found(monkeypatch):
@@ -30,9 +30,27 @@ def test_teams_explain_returns_record(monkeypatch):
             "rubric_version": "1",
             "pipeline_version": "pv",
             "overall_score": 90,
-            "skills_match": {"criterion": "skills_match", "score": 90, "reasoning": "ok", "matched_signals": [], "missing_signals": []},
-            "experience_relevance": {"criterion": "experience_relevance", "score": 90, "reasoning": "ok", "matched_signals": [], "missing_signals": []},
-            "role_fit": {"criterion": "role_fit", "score": 90, "reasoning": "ok", "matched_signals": [], "missing_signals": []},
+            "skills_match": {
+                "criterion": "skills_match",
+                "score": 90,
+                "reasoning": "ok",
+                "matched_signals": [],
+                "missing_signals": [],
+            },
+            "experience_relevance": {
+                "criterion": "experience_relevance",
+                "score": 90,
+                "reasoning": "ok",
+                "matched_signals": [],
+                "missing_signals": [],
+            },
+            "role_fit": {
+                "criterion": "role_fit",
+                "score": 90,
+                "reasoning": "ok",
+                "matched_signals": [],
+                "missing_signals": [],
+            },
             "manual_review_required": False,
             "created_at": "2026-06-10T00:00:00Z",
         }

@@ -1,6 +1,6 @@
-from pathlib import Path
 import json
 import sqlite3
+from pathlib import Path
 from typing import Protocol
 
 import httpx
@@ -127,7 +127,9 @@ class SQLiteAuditRepository:
     @staticmethod
     def _database_path_from_url(database_url: str) -> Path:
         if not database_url.startswith("sqlite:///"):
-            raise AuditPersistenceError("Only sqlite:/// URLs are supported by SQLiteAuditRepository.")
+            raise AuditPersistenceError(
+                "Only sqlite:/// URLs are supported by SQLiteAuditRepository."
+            )
         return Path(database_url.removeprefix("sqlite:///"))
 
     @staticmethod
@@ -199,7 +201,9 @@ class FabricLakehouseRepository:
         try:
             await self._adapter.write_audit_record(record.model_dump(mode="json"))
         except Exception as exc:
-            raise AuditPersistenceError("Unable to persist audit record to Fabric Lakehouse.") from exc
+            raise AuditPersistenceError(
+                "Unable to persist audit record to Fabric Lakehouse."
+            ) from exc
 
     async def list_by_job(self, job_id: str) -> list[CandidateScoreAuditRecord]:
         raise AuditPersistenceError(

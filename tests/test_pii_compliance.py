@@ -1,20 +1,19 @@
 import logging
 import tempfile
-from pathlib import Path
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
 import pytest
 
-from app.services.pii_redaction import (
-    RedactionFilter,
-    SensitivePatterns,
-    setup_logging,
-)
-from app.services.audit_retention import AuditRetentionPolicy
 from app.core.config import Settings
 from app.models.audit import CandidateScoreAuditRecord
 from app.models.scoring import CriterionScore
 from app.services.audit_repository import SQLiteAuditRepository
+from app.services.audit_retention import AuditRetentionPolicy
+from app.services.pii_redaction import (
+    RedactionFilter,
+    SensitivePatterns,
+)
 
 
 class TestPIIRedaction:
@@ -33,8 +32,6 @@ class TestPIIRedaction:
         assert "555" not in redacted or "[REDACTED]" in redacted
 
     def test_ssn_redaction(self):
-        text = "SSN: 123-45-6789"
-        redacted = SensitivePatterns.SSN.sub('[REDACTED]', text)
         # Note: may or may not match depending on regex; just verify pattern exists
         assert hasattr(SensitivePatterns, 'SSN')
 
@@ -185,7 +182,8 @@ class TestAuditRetention:
                 ),
                 role_fit=CriterionScore(criterion="role_fit", score=75, reasoning="ok"),
                 manual_review_required=False,
-                created_at=datetime.now(UTC) - timedelta(days=30),  # 30 days old (within 90-day window)
+                # 30 days old (within 90-day window)
+                created_at=datetime.now(UTC) - timedelta(days=30),
             )
             await repo.save(record)
 

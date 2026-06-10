@@ -1,6 +1,6 @@
+import os
 from functools import lru_cache
 from pathlib import Path
-import os
 
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -53,14 +53,13 @@ class Settings(BaseSettings):
     def graph_scope_list(self) -> list[str]:
         return [scope.strip() for scope in self.graph_scopes.split(",") if scope.strip()]
 
-
+ # type: ignore[misc]
 @lru_cache
 def get_settings() -> Settings:
-    # Only load local `.env` file when running in local development.
-    # In production (ENVIRONMENT != 'local'), do not read `.env` so
-    # secrets must be injected via environment variables or secret
-    # management systems (e.g., Azure Key Vault, GitHub Secrets).
+    # Local dev: load .env file as configured in model_config.
+    # Production: pass _env_file=None so secrets must come from
+    # environment variables or Azure Key Vault — never from a .env file.
     env = os.environ.get("ENVIRONMENT", "local")
     if env == "local":
-        return Settings()  # loads .env as configured in model_config
-    return Settings(_env_file=None)  # type: ignore[call-arg]
+        return Settings()
+    return Settings(_env_file=None)  # type: ignore[call-arg] # type: ignore[call-arg,arg-type]

@@ -31,6 +31,7 @@ class Settings(BaseSettings):
     use_local_scoring_fallback: bool = Field(default=True, alias="USE_LOCAL_SCORING_FALLBACK")
 
     database_url: str = Field(default="sqlite:///./hiresignal.local.sqlite3", alias="DATABASE_URL")
+    pipeline_version: str = Field(default="2026.06.10", alias="PIPELINE_VERSION")
     job_rubric_path: Path = Field(
         default=Path("config/job_rubric.sample.json"),
         alias="JOB_RUBRIC_PATH",
@@ -38,6 +39,9 @@ class Settings(BaseSettings):
     teams_channel_id: str | None = Field(default=None, alias="TEAMS_CHANNEL_ID")
     fabric_workspace_id: str | None = Field(default=None, alias="FABRIC_WORKSPACE_ID")
     fabric_lakehouse_id: str | None = Field(default=None, alias="FABRIC_LAKEHOUSE_ID")
+    fabric_audit_mode: str = Field(default="sqlite", alias="FABRIC_AUDIT_MODE")
+    fabric_audit_endpoint: str | None = Field(default=None, alias="FABRIC_AUDIT_ENDPOINT")
+    fabric_audit_token: SecretStr | None = Field(default=None, alias="FABRIC_AUDIT_TOKEN")
 
     @property
     def graph_authority(self) -> str:

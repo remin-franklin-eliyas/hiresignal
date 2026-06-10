@@ -4,6 +4,7 @@ from pydantic import BaseModel
 
 from app.core.config import Settings, get_settings
 from app.models.attachments import GraphFileAttachment
+from app.models.audit import CandidateScoreAuditRecord
 from app.models.documents import ExtractedDocument
 from app.models.notifications import (
     ChangeNotification,
@@ -26,6 +27,12 @@ from app.pipeline.scoring import (
     CandidateScoringService,
     get_candidate_scoring_service,
 )
+from app.pipeline.privacy import hash_candidate_identifier
+from app.services.audit_repository import (
+    AuditPersistenceError,
+    AuditRepository,
+    get_audit_repository,
+)
 from app.services.graph_client import GraphClient, GraphClientError, get_graph_client
 from app.services.manual_review import ManualReviewQueue, get_manual_review_queue
 
@@ -37,6 +44,7 @@ class IngestionResult(BaseModel):
     accepted_attachments: int = 0
     extracted_documents: int = 0
     scored_candidates: int = 0
+    audited_candidates: int = 0
     rubric_version: str | None = None
 
 
@@ -49,6 +57,7 @@ class OutlookIngestionService:
         cv_text_extractor: CvTextExtractor | None = None,
         rubric_loader: RubricLoader | None = None,
         candidate_scoring_service: CandidateScoringService | None = None,
+        audit_repository: AuditRepository | None = None,
     ) -> None:
         self._settings = settings
         self._graph_client = graph_client
@@ -58,6 +67,7 @@ class OutlookIngestionService:
         self._candidate_scoring_service = (
             candidate_scoring_service or get_candidate_scoring_service()
         )
+        self._audit_repository = audit_repository or get_audit_repository(settings)
 
     async def process_notifications(
         self,
@@ -94,9 +104,10 @@ class OutlookIngestionService:
             return self._queue_manual_review(notification, "no_supported_cv_attachment")
 
         scored_count = 0
+        audited_count = 0
         for document in extracted_documents:
             try:
-                await self._candidate_scoring_service.score_document(
+                score = await self._candidate_scoring_service.score_document(
                     document=document,
                     rubric=rubric,
                     candidate_identifier=f"{message_id}:{document.filename}",
@@ -110,8 +121,27 @@ class OutlookIngestionService:
                 continue
             scored_count += 1
 
+            try:
+                await self._audit_repository.save(
+                    CandidateScoreAuditRecord.from_candidate_score(
+                        score=score,
+                        pipeline_version=self._settings.pipeline_version,
+                        source_event_hash=hash_candidate_identifier(message_id),
+                    )
+                )
+            except AuditPersistenceError:
+                self._queue_manual_review(
+                    notification,
+                    "audit_persistence_failed",
+                    attachment_name=document.filename,
+                )
+                continue
+            audited_count += 1
+
         if scored_count == 0:
             return self._queue_manual_review(notification, "no_scored_candidates")
+        if audited_count == 0:
+            return self._queue_manual_review(notification, "no_audited_candidates")
 
         return IngestionResult(
             message_id=message_id,
@@ -119,6 +149,7 @@ class OutlookIngestionService:
             accepted_attachments=len(extracted_documents),
             extracted_documents=len(extracted_documents),
             scored_candidates=scored_count,
+            audited_candidates=audited_count,
             rubric_version=rubric.version,
         )
 
@@ -191,4 +222,5 @@ def get_outlook_ingestion_service() -> OutlookIngestionService:
         cv_text_extractor=get_cv_text_extractor(),
         rubric_loader=get_rubric_loader(),
         candidate_scoring_service=get_candidate_scoring_service(),
+        audit_repository=get_audit_repository(),
     )

@@ -20,4 +20,38 @@ jobs:
         run: mypy app
       - name: Test
         run: pytest
+      - name: Prepare demo env
+        run: |
+          cp .env.example .env
+        # Keep sample values from .env.example; optionally inject secrets below
+      - name: Inject secrets into demo env (optional)
+        env:
+          GRAPH_CLIENT_SECRET: ${{ secrets.GRAPH_CLIENT_SECRET }}
+          GRAPH_TENANT_ID: ${{ secrets.GRAPH_TENANT_ID }}
+          GRAPH_CLIENT_ID: ${{ secrets.GRAPH_CLIENT_ID }}
+          GRAPH_WEBHOOK_CLIENT_STATE: ${{ secrets.GRAPH_WEBHOOK_CLIENT_STATE }}
+          GRAPH_MONITORED_USER_ID: ${{ secrets.GRAPH_MONITORED_USER_ID }}
+        run: |
+          if [ -n "$GRAPH_CLIENT_SECRET" ]; then echo "GRAPH_CLIENT_SECRET=$GRAPH_CLIENT_SECRET" >> .env; fi
+          if [ -n "$GRAPH_TENANT_ID" ]; then echo "GRAPH_TENANT_ID=$GRAPH_TENANT_ID" >> .env; fi
+          if [ -n "$GRAPH_CLIENT_ID" ]; then echo "GRAPH_CLIENT_ID=$GRAPH_CLIENT_ID" >> .env; fi
+          if [ -n "$GRAPH_WEBHOOK_CLIENT_STATE" ]; then echo "GRAPH_WEBHOOK_CLIENT_STATE=$GRAPH_WEBHOOK_CLIENT_STATE" >> .env; fi
+          if [ -n "$GRAPH_MONITORED_USER_ID" ]; then echo "GRAPH_MONITORED_USER_ID=$GRAPH_MONITORED_USER_ID" >> .env; fi
+      - name: Build and start demo (docker-compose)
+        run: |
+          docker-compose build api
+          docker-compose up -d api
+      - name: Smoke test demo
+        run: |
+          # wait for health endpoint
+          for i in $(seq 1 20); do
+            if curl -sSf http://localhost:8000/health >/dev/null; then
+              echo "service healthy"; break
+            fi
+            sleep 1
+          done
+          curl -sSf http://localhost:8000/health
+      - name: Tear down demo
+        if: always()
+        run: docker-compose down
 

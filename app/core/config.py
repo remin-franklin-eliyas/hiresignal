@@ -1,5 +1,6 @@
 from functools import lru_cache
 from pathlib import Path
+import os
 
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -42,6 +43,7 @@ class Settings(BaseSettings):
     fabric_audit_mode: str = Field(default="sqlite", alias="FABRIC_AUDIT_MODE")
     fabric_audit_endpoint: str | None = Field(default=None, alias="FABRIC_AUDIT_ENDPOINT")
     fabric_audit_token: SecretStr | None = Field(default=None, alias="FABRIC_AUDIT_TOKEN")
+    audit_retention_days: int = Field(default=90, alias="AUDIT_RETENTION_DAYS")
 
     @property
     def graph_authority(self) -> str:
@@ -54,4 +56,11 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    return Settings()  # type: ignore[call-arg]
+    # Only load local `.env` file when running in local development.
+    # In production (ENVIRONMENT != 'local'), do not read `.env` so
+    # secrets must be injected via environment variables or secret
+    # management systems (e.g., Azure Key Vault, GitHub Secrets).
+    env = os.environ.get("ENVIRONMENT", "local")
+    if env == "local":
+        return Settings()  # loads .env as configured in model_config
+    return Settings(_env_file=None)  # type: ignore[call-arg]

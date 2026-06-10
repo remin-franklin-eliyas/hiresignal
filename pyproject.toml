@@ -42,3 +42,6 @@ include = ["app*"]
 [[tool.mypy.overrides]]
 module = ["fitz", "msal"]
 ignore_missing_imports = true
+
+[tool.mypy]
+plugins = ["pydantic.mypy"]
